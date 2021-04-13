@@ -8,6 +8,14 @@ import (
 	"net/http"
 )
 
+type MessageBlock struct {
+	Tag  string `json:"tag"`
+	Text string `json:"text"`
+	Href string `json:"href"`
+}
+
+type Message [][]MessageBlock
+
 type Feishu struct {
 	webhook    string
 	httpClient *http.Client
@@ -20,11 +28,26 @@ func NewFeishu(webhook string) (*Feishu, error) {
 	}, nil
 }
 
-func (fs *Feishu) SendMessage(text string) error {
+func (fs *Feishu) SendTextMessage(text string) error {
+	return fs.SendMessage([][]MessageBlock{
+		{
+			{
+				Tag:  "text",
+				Text: text,
+			},
+		},
+	})
+}
+
+func (fs *Feishu) SendMessage(msg Message) error {
 	data, _ := json.Marshal(map[string]interface{}{
-		"msg_type": "text",
-		"content": map[string]string{
-			"text": text,
+		"msg_type": "post",
+		"content": map[string]interface{}{
+			"post": map[string]interface{}{
+				"zh_cn": map[string]interface{}{
+					"content": msg,
+				},
+			},
 		},
 	})
 	req, err := http.NewRequest("POST", fs.webhook, bytes.NewReader(data))
